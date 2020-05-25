@@ -2,31 +2,29 @@
   (:refer-clojure :exclude [symbol])
   (:require [clojure.core.async :as async]
             [clojure.spec.alpha :as s]
+            [clojure.string :as str]
             [clojure.test :as t]
-            [kaocha.chui.log :as log]
-            [kaocha.chui.server :as server]
-            [kaocha.chui.channel-grinder :as channel-grinder]
+            [io.pedestal.log :as log]
+            [kaocha.cljs2.channel-grinder :as channel-grinder]
             [kaocha.hierarchy :as hierarchy]
             [kaocha.output :as output]
             [kaocha.report :as report]
             [kaocha.testable :as testable]
             [kaocha.type :as type]
-            [cljs.repl :as repl]
-            [kaocha.hierarchy :as kaocha]
-            [clojure.string :as str])
+            [lambdaisland.chui.relay :as relay])
   (:import java.util.UUID))
 
-(require 'kaocha.cljs.print-handlers
+(require 'kaocha.cljs2.print-handlers
          'kaocha.type.var) ;; (defmethod report/fail-summary ::zero-assertions)
 
 (defn client-testable [{:keys [client-id platform agent-id]}]
   {::testable/type ::client
-   ::testable/id (keyword (str "kaocha.chui/client:" client-id))
+   ::testable/id (keyword (str "kaocha.cljs2/client:" client-id))
    ::testable/meta {}
    ::testable/desc platform
    ::testable/aliases [(keyword (str/lower-case (first (str/split platform #" "))))]
-   :kaocha.chui.client/client-id client-id
-   :kaocha.chui.client/agent-id client-id})
+   :kaocha.cljs2/client-id client-id
+   :kaocha.cljs2/agent-id client-id})
 
 (defn test-testable [client-id {:keys [name meta]}]
   {::testable/type ::test
@@ -69,41 +67,41 @@
 
 (defmacro with-tap [[client-id chan] & body]
   `(try
-     (server/tap-client ~client-id ~chan)
+     (relay/tap-client ~client-id ~chan)
      ~@body
      (finally
-       (server/untap-client ~client-id ~chan))))
+       (relay/untap-client ~client-id ~chan))))
 
-(defmethod testable/-load :kaocha.type/cljs2 [{:chui/keys [compile-hook
-                                                           connect-hook
-                                                           server-opts
-                                                           clients-hook]
+(defmethod testable/-load :kaocha.type/cljs2 [{:kaocha.cljs2/keys [compile-hook
+                                                                   connect-hook
+                                                                   server-opts
+                                                                   clients-hook]
                                                :or        {compile-hook identity
                                                            connect-hook identity
-                                                           clients-hook 'kaocha.chui/all-connected-clients}
+                                                           clients-hook 'kaocha.cljs2/all-connected-clients}
                                                :as        suite}]
-  (when-not (server/running?)
-    (log/config :test-suite suite)
+  (when-not (relay/running?)
+    (log/info :test-suite suite)
     (log/info :server-not-running {:msg "Kaocha server not running, starting it now."})
-    (server/start! server-opts))
+    (relay/start! server-opts))
   (let [compile-hook (resolve-fn compile-hook)
         connect-hook (resolve-fn connect-hook)
         clients-hook (resolve-fn clients-hook)
         suite        (compile-hook suite)
         _            (connect-hook suite)
         client-ids   (clients-hook suite)
-        testables    (map (comp client-testable server/client) client-ids)]
+        testables    (map (comp client-testable relay/client) client-ids)]
     (assoc suite
            ::testable/aliases [:cljs]
            ::testable/parallelizable? true
            :kaocha.test-plan/tests (testable/load-testables testables))))
 
 (defmethod testable/-load ::client [testable]
-  (let [client-id (:kaocha.chui.client/client-id testable)
+  (let [client-id (:kaocha.cljs2/client-id testable)
         chan      (async/chan)
         msg-id    (UUID/randomUUID)]
     (with-tap [client-id chan]
-      (server/send! client-id {:type :fetch-test-data :id msg-id})
+      (relay/send! client-id {:type :fetch-test-data :id msg-id})
       (channel-grinder/execute
        chan
        {:init     testable
@@ -120,7 +118,7 @@
                                                             [:kaocha.testable/id
                                                              :kaocha.testable/desc])})))}
         :result #(when (:kaocha.test-plan/tests %)
-                   #_(server/untap-client client-id chan)
+                   #_(relay/untap-client client-id chan)
                    %)}))))
 
 
@@ -133,9 +131,9 @@
 (defmethod testable/-run ::client [{::keys [chan] :as testable} test-plan]
   (t/do-report {:type :kaocha/begin-group})
   (log/debug ::client (::testable/id testable))
-  (let [client-id    (:kaocha.chui.client/client-id testable)
+  (let [client-id    (:kaocha.cljs2/client-id testable)
         chan         (async/chan)
-        send!        (partial server/send! client-id)
+        send!        (partial relay/send! client-id)
         listen       (partial channel-grinder/execute chan)
         start-msg-id (UUID/randomUUID)
         end-msg-id   (UUID/randomUUID)]
@@ -262,13 +260,7 @@
 (comment
   (require 'kaocha.repl)
 
-  (kaocha.repl/run :cljs {:kaocha/tests [{:kaocha.testable/type :kaocha.type/cljs
-                                          :kaocha.testable/id   :cljs
-                                          :kaocha/source-paths  ["src"]
-                                          :kaocha/test-paths    ["test/cljs"]
-                                          :kaocha/ns-patterns   [".*-test$"]
-                                          :cljs/timeout 50000
-                                          :cljs/repl-env 'cljs.repl.browser/repl-env
+  (kaocha.repl/run :cljs {:kaocha/tests [{:kaocha.testable/type :kaocha.type/cljs2
                                           }]
                           :kaocha.plugin.capture-output/capture-output? false
                           :kaocha/reporter ['kaocha.report/documentation]})

@@ -1,13 +1,15 @@
 {:deps
- {:aliases [:dev]}
+ {:aliases [:dev :test :demo]}
 
  :dev-http
  {8000 "classpath:public"}
 
  :builds
- {:main
-  {:target     :browser
-   :modules    {:main {:entries [{{project}}.core]}}
-   :output-dir "resources/public/ui"
-   :asset-path "/ui"
-   :devtools   {:repl-pprint true}}}}
+ {:test
+  {:target     :browser-test
+   :runner-ns  lambdaisland.chui.remote
+   ;; :runner-ns lambdaisland.chui.shadowrun
+   :test-dir   "resources/public"
+   :ns-regexp  "-test$"
+   :devtools   {:repl-pprint true}}
+  }}
