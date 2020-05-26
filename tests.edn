@@ -2,11 +2,7 @@
 {:plugins [:kaocha.plugin/notifier
            :kaocha.plugin/print-invocations]
  :tests   [{:type                      :kaocha.type/cljs2
-            :kaocha.cljs2/compile-hook kaocha.cljs2/compile-shadow
-            :kaocha.cljs2/connect-hook kaocha.cljs2/launch-browser
-            :kaocha.cljs2/clients-hook kaocha.cljs2/all-connected-clients
-            :kaocha.cljs2/browser-url  "http://localhost:8347"
-            :kaocha.cljs2/open-url?    :auto
+            :kaocha.cljs2/before-hook  my.hooks/before-hook
             :shadow/build-id           :test
             }]
  }

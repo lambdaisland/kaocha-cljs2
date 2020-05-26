@@ -1,50 +1,49 @@
 (ns kaocha.type.cljs2
   (:refer-clojure :exclude [symbol])
   (:require [clojure.core.async :as async]
+            [clojure.java.io :as io]
             [clojure.spec.alpha :as s]
             [clojure.string :as str]
             [clojure.test :as t]
             [io.pedestal.log :as log]
-            [kaocha.cljs2.channel-grinder :as channel-grinder]
+            [kaocha.cljs2.funnel-client :as funnel]
             [kaocha.hierarchy :as hierarchy]
             [kaocha.output :as output]
             [kaocha.report :as report]
             [kaocha.testable :as testable]
-            [kaocha.type :as type]
-            [lambdaisland.chui.relay :as relay])
-  (:import java.util.UUID))
+            [kaocha.type :as type]))
 
 (require 'kaocha.cljs2.print-handlers
          'kaocha.type.var) ;; (defmethod report/fail-summary ::zero-assertions)
 
-(defn client-testable [{:keys [client-id platform agent-id]}]
-  {::testable/type ::client
-   ::testable/id (keyword (str "kaocha.cljs2/client:" client-id))
-   ::testable/meta {}
-   ::testable/desc platform
+(defn client-testable [conn {:keys [id platform agent-id] :as whoami}]
+  {::testable/type    ::client
+   ::testable/id      (keyword (str "kaocha.cljs2/client:" id))
+   ::testable/meta    {}
+   ::testable/desc    platform
    ::testable/aliases [(keyword (str/lower-case (first (str/split platform #" "))))]
-   :kaocha.cljs2/client-id client-id
-   :kaocha.cljs2/agent-id client-id})
+   :funnel/conn       conn
+   :funnel/whoami     whoami})
 
-(defn test-testable [client-id {:keys [name meta]}]
+(defn test-testable [whoami {:keys [name meta]}]
   {::testable/type ::test
-   ::testable/id (keyword (str client-id ":" name))
+   ::testable/id (keyword (str (:id whoami) ":" name))
    ::testable/name name
    ::testable/desc (str name)
    ::testable/meta meta
    ::testable/aliases [(keyword (str name))]
    ::test name})
 
-(defn ns-testable [client-id {:keys [name meta tests]}]
+(defn ns-testable [whoami {:keys [name meta tests]}]
   {::testable/type ::ns
-   ::testable/id (keyword (str client-id ":" name))
+   ::testable/id (keyword (str (:id whoami) ":" name))
    ::testable/name name
    ::testable/meta meta
    ::testable/desc (str name)
    ::testable/aliases [(keyword name)]
    ::ns name
    :kaocha.test-plan/tests
-   (map (partial test-testable client-id) tests)})
+   (map (partial test-testable whoami) tests)})
 
 (defn resolve-fn [f]
   (cond
@@ -57,70 +56,52 @@
     :else
     f))
 
-;; compile-hook :: suite -> suite
-;; invokes cljs compilation, makes sure our client and any test nss are injected
-;; can set extra info on the suite, like the location of js or html file
+(defn working-directory []
+  (.getAbsolutePath (io/file "")))
 
-;; connect-hook :: suite -> seq<client-id>
-;; responsible for making sure clients are launched, connected, and ready.
-;; Returns a list of client-ids
+(defn funnel-connection []
+  (doto (funnel/connect "ws://localhost:44220")
+    (funnel/send
+     {:funnel/whoami
+      {:type :kaocha.cljs2
+       :working-directory (working-directory)}})))
 
-(defmacro with-tap [[client-id chan] & body]
-  `(try
-     (relay/tap-client ~client-id ~chan)
-     ~@body
-     (finally
-       (relay/untap-client ~client-id ~chan))))
+(defn default-clients-hook [{:funnel/keys [conn]}]
+  (funnel/wait-for-clients conn))
 
-(defmethod testable/-load :kaocha.type/cljs2 [{:kaocha.cljs2/keys [compile-hook
-                                                                   connect-hook
+(defn type+sender? [msg type whoami]
+  (and (= type (:type msg))
+       (= (:id whoami)
+          (get-in msg [:funnel/whoami :id]))))
+
+(defn test-count [testable]
+  (->> testable
+       testable/test-seq
+       (filter (comp #{::test} ::testable/type))
+       count))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmethod testable/-load :kaocha.type/cljs2 [{:kaocha.cljs2/keys [before-hook
                                                                    server-opts
                                                                    clients-hook]
-                                               :or        {compile-hook identity
-                                                           connect-hook identity
-                                                           clients-hook 'kaocha.cljs2/all-connected-clients}
-                                               :as        suite}]
-  (when-not (relay/running?)
-    (log/info :test-suite suite)
-    (log/info :server-not-running {:msg "Kaocha server not running, starting it now."})
-    (relay/start! server-opts))
-  (let [compile-hook (resolve-fn compile-hook)
-        connect-hook (resolve-fn connect-hook)
+                                               :or                {before-hook  identity
+                                                                   clients-hook default-clients-hook}
+                                               :as                suite}]
+
+  (let [conn         (funnel-connection)
+        suite        (assoc suite
+                            :funnel/conn conn
+                            ::cwd (working-directory))
+        before-hook  (resolve-fn before-hook)
         clients-hook (resolve-fn clients-hook)
-        suite        (compile-hook suite)
-        _            (connect-hook suite)
+        suite        (before-hook suite)
         client-ids   (clients-hook suite)
-        testables    (map (comp client-testable relay/client) client-ids)]
+        testables    (map (partial client-testable conn) client-ids)]
     (assoc suite
            ::testable/aliases [:cljs]
            ::testable/parallelizable? true
            :kaocha.test-plan/tests (testable/load-testables testables))))
-
-(defmethod testable/-load ::client [testable]
-  (let [client-id (:kaocha.cljs2/client-id testable)
-        chan      (async/chan)
-        msg-id    (UUID/randomUUID)]
-    (with-tap [client-id chan]
-      (relay/send! client-id {:type :fetch-test-data :id msg-id})
-      (channel-grinder/execute
-       chan
-       {:init     testable
-        :handlers {:test-data (fn [msg testable]
-                                (if (= msg-id (:reply-to msg))
-                                  (assoc testable :kaocha.test-plan/tests
-                                         (map (partial ns-testable client-id) (:test-data msg)))
-                                  testable))
-                   :timeout (fn [testable]
-                              (throw (ex-info "Timeout while fetching test data"
-                                              {::fetch-test-data :timeout
-                                               :client
-                                               (select-keys testable
-                                                            [:kaocha.testable/id
-                                                             :kaocha.testable/desc])})))}
-        :result #(when (:kaocha.test-plan/tests %)
-                   #_(relay/untap-client client-id chan)
-                   %)}))))
-
 
 (defmethod testable/-run :kaocha.type/cljs2 [testable test-plan]
   (t/do-report {:type :begin-test-suite})
@@ -128,88 +109,102 @@
     (t/do-report {:type :end-test-suite})
     (assoc testable :kaocha.result/tests results)))
 
-(defmethod testable/-run ::client [{::keys [chan] :as testable} test-plan]
-  (t/do-report {:type :kaocha/begin-group})
-  (log/debug ::client (::testable/id testable))
-  (let [client-id    (:kaocha.cljs2/client-id testable)
-        chan         (async/chan)
-        send!        (partial relay/send! client-id)
-        listen       (partial channel-grinder/execute chan)
-        start-msg-id (UUID/randomUUID)
-        end-msg-id   (UUID/randomUUID)]
-    (with-tap [client-id chan]
-      (send! {:type       :start-run
-              :id         start-msg-id
-              :test-count (->> testable
-                               testable/test-seq
-                               (filter (comp #{::test} ::testable/type))
-                               count)})
-      (listen {:handlers
-               {:run-started (fn [msg ctx]
-                               (cond-> ctx
-                                 (= start-msg-id (:reply-to msg))
-                                 (assoc :done? true)))}})
-      (let [ns-tests (map #(assoc %
-                                  ::send! send!
-                                  ::listen listen)
-                          (:kaocha.test-plan/tests testable))
-            ns-tests (testable/run-testables ns-tests test-plan)]
-        (send! {:type :finish-run :id end-msg-id})
-        (listen {:handlers
-                 {:run-finished (fn [msg ctx]
-                                  (cond-> ctx
-                                    (= end-msg-id (:reply-to msg))
-                                    (assoc :done? true)))}})
-        (t/do-report {:type :kaocha/end-group})
-        (assoc testable :kaocha.result/tests ns-tests)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmethod testable/-run ::ns [{::keys [send! listen ns] :as testable} test-plan]
+(defn send-to [{:funnel/keys [conn whoami]} msg]
+  (funnel/send conn (assoc msg :funnel/broadcast [:id (:id whoami)])))
+
+(defn listen-to
+  ([client handler]
+   (listen-to client handler nil))
+  ([client handler opts]
+   (funnel/listen (:funnel/conn client) handler opts)))
+
+(defn wait-for [client type]
+  (funnel/wait-for
+   (:funnel/conn client)
+   (fn [msg]
+     (type+sender? msg type (:funnel/whoami client)))))
+
+(defmethod testable/-load ::client [{:funnel/keys [whoami] :as client}]
+  (send-to client {:type             :fetch-test-data
+                   :funnel/subscribe [:id (:id whoami)]})
+  (listen-to client
+             (fn [msg testable]
+               (if (type+sender? msg :test-data whoami)
+                 (reduced
+                  (assoc testable :kaocha.test-plan/tests
+                         (map (partial ns-testable whoami) (:test-data msg))))
+                 testable))
+             {:init client
+              :on-timeout
+              (fn [testable]
+                (throw (ex-info "Timeout while fetching test data"
+                                {::fetch-test-data :timeout
+                                 :client
+                                 (select-keys testable
+                                              [:kaocha.testable/id
+                                               :kaocha.testable/desc])})))}))
+
+(defmethod testable/-run ::client [{:funnel/keys [conn whoami] :as client} test-plan]
+  (t/do-report {:type :kaocha/begin-group})
+  (log/debug ::client (::testable/id client))
+
+  (send-to client {:type :start-run :test-count (test-count client)})
+  (wait-for client :run-started)
+
+  (let [ns-tests (for [ns-test (:kaocha.test-plan/tests client)]
+                   (assoc ns-test ::client {:funnel/conn conn :funnel/whoami whoami}))
+        ns-tests (testable/run-testables ns-tests test-plan)]
+
+    (send-to client {:type :finish-run})
+    (wait-for client :run-finished)
+
+    (t/do-report {:type :kaocha/end-group})
+    (assoc client :kaocha.result/tests ns-tests)))
+
+(defmethod testable/-run ::ns [{::keys [ns client]
+                                :as testable}
+                               test-plan]
   (t/do-report {:type :begin-test-ns})
   (log/debug ::ns (::testable/id testable))
-  (let [start-msg-id (UUID/randomUUID)]
-    (send! {:type :start-ns :id start-msg-id :ns ns})
-    (listen {:handlers {:ns-started (fn [msg ctx]
-                                      (cond-> ctx
-                                        (= start-msg-id (:reply-to msg))
-                                        (assoc :done? true)))}}))
-  (let [var-tests  (map #(assoc %
-                                ::send! send!
-                                ::listen listen)
-                        (:kaocha.test-plan/tests testable))
-        var-tests  (testable/run-testables var-tests test-plan)
-        end-msg-id (UUID/randomUUID)]
-    (send! {:type :finish-ns :id end-msg-id})
-    (listen {:handlers {:ns-finished (fn [msg ctx]
-                                       (cond-> ctx
-                                         (= end-msg-id (:reply-to msg))
-                                         (assoc :done? true)))}})
+
+  (send-to client {:type :start-ns :ns ns})
+  (wait-for client :ns-started)
+
+  (let [var-tests  (for [var-test (:kaocha.test-plan/tests testable)]
+                     (assoc var-test ::client client))
+        var-tests  (testable/run-testables var-tests test-plan)]
+
+    (send-to client {:type :finish-ns})
+    (wait-for client :ns-finished)
 
     (t/do-report {:type :end-test-ns})
     (assoc testable :kaocha.result/tests var-tests)))
 
-(defmethod testable/-run ::test [{::keys [send! listen test] :as testable} test-plan]
+(defmethod testable/-run ::test [{::keys [client test] :as testable} test-plan]
   (t/do-report {:type :begin-test-var})
   (log/debug ::test (::testable/id testable))
-  (let [msg-id (UUID/randomUUID)
-        _ (send! {:type :run-test :id msg-id :test test})
-        testable (listen
-                  {:init testable
-                   :result #(when (:kaocha.result/count %) %)
-                   :handlers
-                   {:cljs.test/message
-                    (fn [msg testable]
-                      (t/do-report (:cljs.test/message msg))
-                      testable)
-                    :test-finished
-                    (fn [{:keys [summary reply-to]} testable]
-                      (cond-> testable
-                        (= msg-id reply-to)
-                        (assoc :kaocha.result/count 1
-                               :kaocha.result/test 1
-                               :kaocha.result/pass (:pass summary 0)
-                               :kaocha.result/fail (:fail summary 0)
-                               :kaocha.result/error (:error summary 0)
-                               :kaocha.result/pending 0)))}})]
+  (send-to client {:type :run-test :test test})
+  (let [testable (listen-to client
+                            (fn [msg ctx]
+                              (case (:type msg)
+                                :cljs.test/message
+                                (do
+                                  (t/do-report (:cljs.test/message msg))
+                                  testable)
+
+                                :test-finished
+                                (let [{:keys [summary]} msg]
+                                  (reduced
+                                   (assoc testable
+                                          :kaocha.result/count 1
+                                          :kaocha.result/test 1
+                                          :kaocha.result/pass (:pass summary 0)
+                                          :kaocha.result/fail (:fail summary 0)
+                                          :kaocha.result/error (:error summary 0)
+                                          :kaocha.result/pending 0)))))
+                            {:init testable})]
     (t/do-report {:type :end-test-var})
     testable))
 
@@ -235,6 +230,7 @@
 
 (comment
   (require 'kaocha.repl)
+
 
   (kaocha.repl/run :lambdaisland.chui-demo.a-test/aa-test)
 
