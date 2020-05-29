@@ -1,7 +1,7 @@
 # kaocha-cljs2
 
 <!-- badges -->
-[![cljdoc badge](https://cljdoc.org/badge/lambdaisland/{project})](https://cljdoc.org/d/lambdaisland/{project}) [![Clojars Project](https://img.shields.io/clojars/v/lambdaisland/{project}.svg)](https://clojars.org/lambdaisland/{project})
+[![cljdoc badge](https://cljdoc.org/badge/lambdaisland/kaocha-cljs2)](https://cljdoc.org/d/lambdaisland/kaocha-cljs2) [![Clojars Project](https://img.shields.io/clojars/v/lambdaisland/kaocha-cljs2.svg)](https://clojars.org/lambdaisland/kaocha-cljs2)
 <!-- /badges -->
 
 Run ClojureScript tests with [Kaocha](https://github.com/lambdaisland/kaocha). New and improved.
@@ -9,7 +9,7 @@ Run ClojureScript tests with [Kaocha](https://github.com/lambdaisland/kaocha). N
 <!-- opencollective -->
 ### Support Lambda Island Open Source
 
-Regal is part of a growing collection of quality Clojure libraries and
+Kaocha-cljs2 is part of a growing collection of quality Clojure libraries and
 tools released on the Lambda Island label. If you find value in our work please
 consider [becoming a backer on Open Collective](http://opencollective.com/lambda-island#section-contribute)
 <!-- /opencollective -->
