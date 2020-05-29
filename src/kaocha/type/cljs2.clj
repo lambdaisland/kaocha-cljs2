@@ -85,17 +85,14 @@
 (defmethod testable/-load :kaocha.type/cljs2 [{:kaocha.cljs2/keys [before-hook
                                                                    server-opts
                                                                    clients-hook]
-                                               :or                {before-hook  identity
-                                                                   clients-hook default-clients-hook}
+                                               :or                {clients-hook default-clients-hook}
                                                :as                suite}]
 
   (let [conn         (funnel-connection)
         suite        (assoc suite
                             :funnel/conn conn
                             ::cwd (working-directory))
-        before-hook  (resolve-fn before-hook)
         clients-hook (resolve-fn clients-hook)
-        suite        (before-hook suite)
         client-ids   (clients-hook suite)
         testables    (map (partial client-testable conn) client-ids)]
     (assoc suite
