@@ -16,12 +16,12 @@
 (require 'kaocha.cljs2.print-handlers
          'kaocha.type.var) ;; (defmethod report/fail-summary ::zero-assertions)
 
-(defn client-testable [conn {:keys [id platform agent-id] :as whoami}]
+(defn client-testable [conn {:keys [id platform platform-type] :as whoami}]
   {::testable/type    ::client
    ::testable/id      (keyword (str "kaocha.cljs2/client:" id))
    ::testable/meta    {}
-   ::testable/desc    platform
-   ::testable/aliases [(keyword (str/lower-case (first (str/split platform #" "))))]
+   ::testable/desc    (str id " (" platform ")")
+   ::testable/aliases [(keyword platform-type)]
    :funnel/conn       conn
    :funnel/whoami     whoami})
 
@@ -31,7 +31,7 @@
    ::testable/name name
    ::testable/desc (str name)
    ::testable/meta meta
-   ::testable/aliases [(keyword (str name))]
+   ::testable/aliases [(keyword (str name)) (keyword (str (:platform-type whoami) ":" name))]
    ::test name})
 
 (defn ns-testable [whoami {:keys [name meta tests]}]
@@ -40,7 +40,7 @@
    ::testable/name name
    ::testable/meta meta
    ::testable/desc (str name)
-   ::testable/aliases [(keyword name)]
+   ::testable/aliases [(keyword name) (keyword (str (:platform-type whoami) ":" name))]
    ::ns name
    :kaocha.test-plan/tests
    (map (partial test-testable whoami) tests)})
@@ -82,23 +82,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmethod testable/-load :kaocha.type/cljs2 [{:kaocha.cljs2/keys [before-hook
-                                                                   server-opts
+(defmethod testable/-load :kaocha.type/cljs2 [{:kaocha.cljs2/keys [server-opts
                                                                    clients-hook]
                                                :or                {clients-hook default-clients-hook}
                                                :as                suite}]
-
+  (log/debug :-load/starting suite)
   (let [conn         (funnel-connection)
         suite        (assoc suite
                             :funnel/conn conn
                             ::cwd (working-directory))
         clients-hook (resolve-fn clients-hook)
         client-ids   (clients-hook suite)
-        testables    (map (partial client-testable conn) client-ids)]
+        testables    (map (partial client-testable conn) client-ids)
+        _ (log/debug :-load/got-clients {:client-ids client-ids})
+        tests (testable/load-testables testables)
+        _ (log/debug :-load/loaded-tests {:testable-ids (map ::testable/id tests)})]
     (assoc suite
            ::testable/aliases [:cljs]
            ::testable/parallelizable? true
-           :kaocha.test-plan/tests (testable/load-testables testables))))
+           :kaocha.test-plan/tests tests)))
 
 (defmethod testable/-run :kaocha.type/cljs2 [testable test-plan]
   (t/do-report {:type :begin-test-suite})
@@ -145,7 +147,7 @@
 
 (defmethod testable/-run ::client [{:funnel/keys [conn whoami] :as client} test-plan]
   (t/do-report {:type :kaocha/begin-group})
-  (log/debug ::client (::testable/id client))
+  (log/debug :run-client/starting {:testable-id (::testable/id client)})
 
   (send-to client {:type :start-run :test-count (test-count client)})
   (wait-for client :run-started)
@@ -164,7 +166,7 @@
                                 :as testable}
                                test-plan]
   (t/do-report {:type :begin-test-ns})
-  (log/debug ::ns (::testable/id testable))
+  (log/debug :run-ns/starting {:testable-id (::testable/id testable)})
 
   (send-to client {:type :start-ns :ns ns})
   (wait-for client :ns-started)
@@ -181,7 +183,7 @@
 
 (defmethod testable/-run ::test [{::keys [client test] :as testable} test-plan]
   (t/do-report {:type :begin-test-var})
-  (log/debug ::test (::testable/id testable))
+  (log/debug :run-test/starting {:testable-id (::testable/id testable)})
   (send-to client {:type :run-test :test test})
   (let [testable (listen-to client
                             (fn [msg ctx]

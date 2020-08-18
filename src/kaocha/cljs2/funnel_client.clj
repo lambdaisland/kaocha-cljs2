@@ -3,7 +3,8 @@
   (:require [clojure.core.async :as async]
             [cognitect.transit :as transit]
             [io.pedestal.log :as log]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [lambdaisland.funnel-client :as funnel])
   (:import (java.io ByteArrayInputStream ByteArrayOutputStream)
            (java.net URI)
            (org.java_websocket.client WebSocketClient)
@@ -11,40 +12,25 @@
 
 (set! *warn-on-reflection* true)
 
-(def read-handlers (atom {}))
-
-(defn to-transit ^String [value]
-  (let [out (ByteArrayOutputStream. 4096)
-        writer (transit/writer out :json)]
-    (transit/write writer value)
-    (.toString out)))
-
-(defn from-transit [^String transit]
-  (let [in (ByteArrayInputStream. (.getBytes transit))
-        reader (transit/reader in :json {:handlers @read-handlers})]
-    (transit/read reader)))
-
-(defn connect ^WebSocketClient [uri]
+(defn connect ^WebSocketClient []
   (let [chan (async/chan)
-        conn (proxy [WebSocketClient clojure.lang.IMeta] [(URI. (str uri))]
-               (onOpen [handshake])
-               (onClose [code reason remote?]
-                 (async/>!! chan {:type :ws/closed :code code :reason reason :remote? remote?}))
-               (onMessage [message]
-                 (async/>!! chan (from-transit message)))
-               (onError [ex]
-                 (async/>!! chan {:type :error :exception ex}))
-               (meta []
-                 {:chan chan}))]
-    (when-not (.connectBlocking conn 2 java.util.concurrent.TimeUnit/SECONDS)
-      (throw (ex-info "Failed connecting to Funnel, is it running?" {:uri uri})))
+        conn (funnel/connect {:on-close
+                              (fn [_ {:keys [code reason remote?]}]
+                                (async/>!! chan {:type :ws/closed :code code :reason reason :remote? remote?}))
+                              :on-message
+                              (fn [_ msg]
+                                (async/>!! chan msg))
+                              :on-error
+                              (fn [_ ex]
+                                (async/>!! chan {:type :error :exception ex}))
+                              :chan chan})]
     conn))
 
 (defn send [^WebSocketClient ws-client msg]
-  (.send ws-client (to-transit msg)))
+  (funnel/send ws-client msg))
 
 (defn close [^WebSocketClient conn]
-  (.close conn))
+  (funnel/disconnect conn))
 
 (defn listen
   "\"Coffee-grinder\" that processes messages we receive from funnel. Messages are
@@ -93,7 +79,7 @@
 ;; higher level API
 
 (def client-selector
-  {:type :lambdaisland.chui.remote
+  {:lambdaisland.chui.remote? true
    :working-directory (.getAbsolutePath (io/file ""))})
 
 (defn list-clients [conn]
