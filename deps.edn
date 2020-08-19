@@ -1,18 +1,16 @@
 {:paths ["src" "resources"]
 
  :deps
- {org.clojure/clojure        {:mvn/version "1.10.1"}
-  lambdaisland/chui-remote   {:local/root "0.0.133"}
-  lambdaisland/funnel-client {:mvn/version "0.0.9"}
+ {lambdaisland/chui-remote   {:mvn/version "0.0.146"}
   io.pedestal/pedestal.log   {:mvn/version "0.5.2"}}
 
  :aliases
  {:dev
   {:extra-paths ["dev"]
    :extra-deps  {org.clojure/clojurescript {:git/url "https://github.com/clojure/clojurescript"
-                                            :sha     "1084cca73ac5082ae76f1939356f664f35284c4d"}
+                                            :sha     "1084cca73ac5082ae76f1939356f664f35284c4d"} ;; https://clojure.atlassian.net/browse/CLJS-3276
                  thheller/shadow-cljs           {:mvn/version "2.9.9"}
-                 garden/garden                  {:mvn/version "1.3.9"}
+                 ;; garden/garden                  {:mvn/version "1.3.9"} ;; needed when using local checkout of chui
                  ch.qos.logback/logback-classic {:exclusions  [org.slf4j/slf4j-api org.slf4j/slf4j-nop]
                                                  :mvn/version "1.2.3"}}}
 
