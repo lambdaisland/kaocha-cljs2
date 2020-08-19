@@ -1,7 +1,3 @@
 # Unreleased
 
-## Added
-
-## Fixed
-
-## Changed
+First pre-release.
