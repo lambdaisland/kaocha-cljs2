@@ -1,8 +1,8 @@
 {:paths ["src" "resources"]
 
  :deps
- {lambdaisland/chui-remote {:mvn/version "0.0.146"}
-  lambdaisland/chui-ui     {:mvn/version "0.0.146"}
+ {lambdaisland/chui-remote {:mvn/version "0.0.149"}
+  lambdaisland/chui-ui     {:mvn/version "0.0.149"}
   io.pedestal/pedestal.log {:mvn/version "0.5.8"}}
 
  :aliases

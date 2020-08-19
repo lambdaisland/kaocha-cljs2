@@ -1,10 +1,9 @@
 # Unreleased
 
-## Added
-
 ## Fixed
 
-## Changed
+- Remove debug call
+- Version bumps
 
 # 0.0.18 (2020-08-19 / 239b9b8)
 

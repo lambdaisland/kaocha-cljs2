@@ -177,7 +177,6 @@
   (send-to client {:type :run-test :test test})
   (listen-to client
              (fn [msg ctx]
-               (prn ::msg msg)
                (case (:type msg)
                  :cljs.test/message
                  ;; When fail-fast is enabled then reporting an :error will
