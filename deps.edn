@@ -2,7 +2,7 @@
 
  :deps
  {lambdaisland/chui-remote   {:mvn/version "0.0.146"}
-  io.pedestal/pedestal.log   {:mvn/version "0.5.2"}}
+  io.pedestal/pedestal.log   {:mvn/version "0.5.8"}}
 
  :aliases
  {:dev
@@ -19,5 +19,4 @@
 
   :test
   {:extra-paths ["test"]
-   :extra-deps  {lambdaisland/kaocha      {:mvn/version "0.0-601"}
-                 lambdaisland/chui-remote {:local/root "../chui"}}}}}
+   :extra-deps  {lambdaisland/kaocha {:mvn/version "1.0.669"}}}}}
