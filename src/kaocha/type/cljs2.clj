@@ -173,30 +173,34 @@
     (assoc testable :kaocha.result/tests var-tests)))
 
 (defmethod testable/-run ::test [{::keys [client test] :as testable} test-plan]
-  (t/do-report {:type :begin-test-var})
   (log/debug :run-test/starting {:testable-id (::testable/id testable)})
   (send-to client {:type :run-test :test test})
-  (let [testable (listen-to client
-                            (fn [msg ctx]
-                              (case (:type msg)
-                                :cljs.test/message
-                                (do
-                                  (t/do-report (:cljs.test/message msg))
-                                  testable)
+  (listen-to client
+             (fn [msg ctx]
+               (prn ::msg msg)
+               (case (:type msg)
+                 :cljs.test/message
+                 ;; When fail-fast is enabled then reporting an :error will
+                 ;; cause the fail-fast reporter to throw an error, this is so
+                 ;; it can break out of a deftest early. In the cljs case this
+                 ;; breaking out of deftest needs to be handled on the cljs/chui
+                 ;; side. Allowing it to happen here will simply cause the
+                 ;; fail-fast exception to bubble.
+                 (binding [testable/*fail-fast?* false]
+                   (t/do-report (:cljs.test/message msg))
+                   testable)
 
-                                :test-finished
-                                (let [{:keys [summary]} msg]
-                                  (reduced
-                                   (assoc testable
-                                          :kaocha.result/count 1
-                                          :kaocha.result/test 1
-                                          :kaocha.result/pass (:pass summary 0)
-                                          :kaocha.result/fail (:fail summary 0)
-                                          :kaocha.result/error (:error summary 0)
-                                          :kaocha.result/pending 0)))))
-                            {:init testable})]
-    (t/do-report {:type :end-test-var})
-    testable))
+                 :test-finished
+                 (let [{:keys [summary]} msg]
+                   (reduced
+                    (assoc testable
+                           :kaocha.result/count 1
+                           :kaocha.result/test 1
+                           :kaocha.result/pass (:pass summary 0)
+                           :kaocha.result/fail (:fail summary 0)
+                           :kaocha.result/error (:error summary 0)
+                           :kaocha.result/pending 0)))))
+             {:init testable}))
 
 (hierarchy/derive! :kaocha.type/cljs2 :kaocha.testable.type/suite)
 (hierarchy/derive! ::client :kaocha.testable.type/group)
