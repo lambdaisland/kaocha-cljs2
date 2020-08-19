@@ -1,3 +1,11 @@
+# Unreleased
+
+## Added
+
+## Fixed
+
+## Changed
+
 # 0.0.18 (2020-08-19 / 239b9b8)
 
 ## Fixed
