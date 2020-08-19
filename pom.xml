@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>lambdaisland</groupId>
   <artifactId>kaocha-cljs2</artifactId>
-  <version>0.0.18</version>
+  <version>0.0.21</version>
   <name>kaocha-cljs2</name>
   <description>cljs.test support for Kaocha, second generation.</description>
   <url>https://github.com/lambdaisland/kaocha-cljs2</url>
@@ -22,13 +22,13 @@
     <url>https://github.com/lambdaisland/kaocha-cljs2</url>
     <connection>scm:git:git://github.com/lambdaisland/kaocha-cljs2.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/lambdaisland/kaocha-cljs2.git</developerConnection>
-    <tag>ee57e228e370ac19a91b79913498e2fa3b64d3a4</tag>
+    <tag>52927fc9c09df9c96ad8e8ba97d5f11548e024b4</tag>
   </scm>
   <dependencies>
     <dependency>
       <groupId>lambdaisland</groupId>
       <artifactId>chui-remote</artifactId>
-      <version>0.0.146</version>
+      <version>0.0.149</version>
     </dependency>
     <dependency>
       <groupId>io.pedestal</groupId>
@@ -38,7 +38,7 @@
     <dependency>
       <groupId>lambdaisland</groupId>
       <artifactId>chui-ui</artifactId>
-      <version>0.0.146</version>
+      <version>0.0.149</version>
     </dependency>
   </dependencies>
   <build>
@@ -59,7 +59,7 @@
         <configuration>
           <archive>
             <manifestEntries>
-              <git-revision>ee57e228e370ac19a91b79913498e2fa3b64d3a4</git-revision>
+              <git-revision>52927fc9c09df9c96ad8e8ba97d5f11548e024b4</git-revision>
             </manifestEntries>
           </archive>
         </configuration>
