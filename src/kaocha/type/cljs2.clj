@@ -11,7 +11,8 @@
             [kaocha.output :as output]
             [kaocha.report :as report]
             [kaocha.testable :as testable]
-            [kaocha.type :as type]))
+            [kaocha.type :as type]
+            [lambdaisland.funnel-client.macros :refer [working-directory]]))
 
 (require 'kaocha.cljs2.print-handlers
          'kaocha.type.var) ;; (defmethod report/fail-summary ::zero-assertions)
@@ -56,16 +57,6 @@
     :else
     f))
 
-(defn working-directory []
-  (.getAbsolutePath (io/file "")))
-
-(defn funnel-connection []
-  (doto (funnel/connect "ws://localhost:44220")
-    (funnel/send
-     {:funnel/whoami
-      {:type :kaocha.cljs2
-       :working-directory (working-directory)}})))
-
 (defn default-clients-hook [{:funnel/keys [conn]}]
   (funnel/wait-for-clients conn))
 
@@ -87,7 +78,7 @@
                                                :or                {clients-hook default-clients-hook}
                                                :as                suite}]
   (log/debug :-load/starting suite)
-  (let [conn         (funnel-connection)
+  (let [conn         (funnel/connect)
         suite        (assoc suite
                             :funnel/conn conn
                             ::cwd (working-directory))

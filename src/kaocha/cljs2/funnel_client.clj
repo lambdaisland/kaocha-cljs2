@@ -4,7 +4,8 @@
             [cognitect.transit :as transit]
             [io.pedestal.log :as log]
             [clojure.java.io :as io]
-            [lambdaisland.funnel-client :as funnel])
+            [lambdaisland.funnel-client :as funnel]
+            [lambdaisland.funnel-client.macros :refer [working-directory]])
   (:import (java.io ByteArrayInputStream ByteArrayOutputStream)
            (java.net URI)
            (org.java_websocket.client WebSocketClient)
@@ -14,7 +15,9 @@
 
 (defn connect ^WebSocketClient []
   (let [chan (async/chan)
-        conn (funnel/connect {:on-close
+        conn (funnel/connect {:whoami {:type :kaocha.cljs2
+                                       :working-directory (working-directory)}
+                              :on-close
                               (fn [_ {:keys [code reason remote?]}]
                                 (async/>!! chan {:type :ws/closed :code code :reason reason :remote? remote?}))
                               :on-message
@@ -30,7 +33,7 @@
   (funnel/send ws-client msg))
 
 (defn close [^WebSocketClient conn]
-  (funnel/disconnect conn))
+  (funnel/disconnect! conn))
 
 (defn listen
   "\"Coffee-grinder\" that processes messages we receive from funnel. Messages are
