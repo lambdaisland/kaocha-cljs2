@@ -95,12 +95,12 @@ ecosystem of tooling available to ClojureScript.
 
 ``` clojure
 ;; deps.edn
-lambdaisland/kaocha-cljs2 {:mvn/version "0.0.18"}
+lambdaisland/kaocha-cljs2 {:mvn/version "0.0.21"}
 ```
 
 ``` clojure
 ;; project.clj
-[lambdaisland/kaocha-cljs2 "0.0.18"]
+[lambdaisland/kaocha-cljs2 "0.0.21"]
 ```
 
 You also need [lambdaisland/chui-remote](https://github.com/lambdaisland/chui)
