@@ -71,9 +71,10 @@ customized with plugins.
 
 ### [Chui](https://github.com/lambdaisland/chui)
 
-Test runner written in ClojureScript. Consists of `chui-core`, which provides
-the test runner logic and API, `chui-ui` which provides a browser-based UI, and
-`chui-remote`, which provides API access for running tests via Funnel. By adding
+Test runner written in ClojureScript. Consists of:
+- `chui-core`: which provides the test runner logic and API
+- `chui-ui`:  which provides a browser-based UI, and
+- `chui-remote`: which connects to and interact with Funnel. By adding
 the remote to your ClojureScript build you allow it to talk to kaocha-cljs2.
 Using the UI is optional.
 
@@ -89,6 +90,34 @@ connected?), and enabling communication between `chui-remote` and
 A Kaocha test suite type for ClojureScript test suites. Makes the Kaocha
 ecosystem of tooling available to ClojureScript.
 
+When you ask kaocha to run tests of type `:kaocha.type/cljs2`, it
+would delegate to the implementation of `kaocha-cljs`, which
+would connect to funnel and forward the tests to chui-remote (which
+runs in the browser or nodejs).
+
+```
+┌──────────────────────────────┐
+│    KaoCha                    │
+│            ┌─────────────────┤
+│            │   kaocha-cljs2  │
+└────────────┴─────────────────┘
+                      │
+                      ▼
+┌──────────────────────────────┐
+│           Funnel             │
+└──────────────────────────────┘
+                       ▲
+                       │
+                       │
+┌────────────┬────────────────┐
+│   Browser  │chui-remote     │
+│            ├────────────────┤
+│            │chui test-runner│
+│            └────────────────┤
+└─────────────────────────────┘
+```
+
+
 ## Installation
 
 ### Add `lambdaisland/kaocha-cljs2` as a dependency:
@@ -102,9 +131,6 @@ lambdaisland/kaocha-cljs2 {:mvn/version "0.0.21"}
 ;; project.clj
 [lambdaisland/kaocha-cljs2 "0.0.21"]
 ```
-
-You also need [lambdaisland/chui-remote](https://github.com/lambdaisland/chui)
-as a dependency so that it's available to your ClojureScript build.
 
 ### Install Funnel
 
@@ -134,6 +160,20 @@ for a map containing keys like `:output-to`, `:main`, or `:optimizations`.
 ``` clojure
 {;; :main foo.bar  ....
  :preloads [lambdaisland.chui.remote]}
+```
+
+Here is an example shadow-cljs configuration:
+```clojure
+{:builds
+ {:test-kaocha {:target    :browser-test
+                :runner-ns kaocha.cljs2.shadow-runner
+                :test-dir  "target/kaocha-test"
+                :ns-regexp ".*-test$"
+
+                :devtools {:http-port 1818
+                           :http-root "target/kaocha-test"
+
+                           :preloads [lambdaisland.chui.remote]}}}}
 ```
 
 Now verify that your ClojureScript build is "phoning home". Compile it and run
