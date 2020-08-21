@@ -91,7 +91,7 @@ A Kaocha test suite type for ClojureScript test suites. Makes the Kaocha
 ecosystem of tooling available to ClojureScript.
 
 When you ask kaocha to run tests of type `:kaocha.type/cljs2`, it
-would delegate to the implementation of `kaocha-cljs`, which
+would delegate to the implementation of `kaocha-cljs2`, which
 would connect to funnel and forward the tests to chui-remote (which
 runs in the browser or nodejs).
 
