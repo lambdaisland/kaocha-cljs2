@@ -6,6 +6,10 @@
   no Funnel message has been received for this amount of time then we assume the
   client has gotten stuck or gone away and we time out
 
+## Fixed
+
+- Upgrade Chui, this fixes handling of `:once` fixtures
+
 # 0.0.21 (2020-08-19 / d4de44c)
 
 ## Fixed
