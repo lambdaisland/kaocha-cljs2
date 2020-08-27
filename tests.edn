@@ -4,5 +4,6 @@
  :tests   [{:type                      :kaocha.type/cljs2
             :kaocha.cljs2/before-hook  my.hooks/before-hook
             :shadow/build-id           :test
+            :kaocha.cljs2/timeout      30000
             }]
  }

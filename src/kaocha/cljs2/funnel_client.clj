@@ -73,10 +73,15 @@
              result
              (recur (poll) ctx))))))))
 
-(defn wait-for [conn pred]
-  (listen conn (fn [msg ctx]
-                 (if (pred msg)
-                   (reduced true)))))
+(defn wait-for
+  ([conn pred]
+   (wait-for conn pred nil))
+  ([conn pred opts]
+   (listen conn
+           (fn [msg ctx]
+             (if (pred msg)
+               (reduced true)))
+           opts)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; higher level API

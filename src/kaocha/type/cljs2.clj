@@ -57,8 +57,9 @@
     :else
     f))
 
-(defn default-clients-hook [{:funnel/keys [conn]}]
-  (funnel/wait-for-clients conn))
+(defn default-clients-hook [{:funnel/keys [conn]
+                             :kaocha.cljs2/keys [timeout]}]
+  (funnel/wait-for-clients conn (if timeout {:timeout timeout})))
 
 (defn type+sender? [msg type whoami]
   (and (= type (:type msg))
@@ -73,9 +74,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defn add-timeouts [tests timeout]
+  (mapv (fn [test]
+          (cond-> (assoc test :kaocha.cljs2/timeout timeout)
+            (:kaocha.test-plan/tests test)
+            (update :kaocha.test-plan/tests add-timeouts timeout)))
+        tests))
+
 (defmethod testable/-load :kaocha.type/cljs2 [{:kaocha.cljs2/keys [server-opts
-                                                                   clients-hook]
-                                               :or                {clients-hook default-clients-hook}
+                                                                   clients-hook
+                                                                   timeout]
+                                               :or                {clients-hook default-clients-hook
+                                                                   timeout 15000}
                                                :as                suite}]
   (log/debug :-load/starting suite)
   (let [conn         (funnel/connect)
@@ -84,9 +94,9 @@
                             ::cwd (working-directory))
         clients-hook (resolve-fn clients-hook)
         client-ids   (clients-hook suite)
-        testables    (map (partial client-testable conn) client-ids)
+        testables    (map (comp (partial client-testable conn)) client-ids)
         _ (log/debug :-load/got-clients {:client-ids client-ids})
-        tests (testable/load-testables testables)
+        tests (add-timeouts (testable/load-testables testables) timeout)
         _ (log/debug :-load/loaded-tests {:testable-ids (map ::testable/id tests)})]
     (assoc suite
            ::testable/aliases [:cljs]
@@ -110,13 +120,16 @@
   ([client handler opts]
    (funnel/listen (:funnel/conn client) handler opts)))
 
-(defn wait-for [client type]
+(defn wait-for [client type timeout]
   (funnel/wait-for
    (:funnel/conn client)
    (fn [msg]
-     (type+sender? msg type (:funnel/whoami client)))))
+     (type+sender? msg type (:funnel/whoami client)))
+   {:timeout timeout}))
 
-(defmethod testable/-load ::client [{:funnel/keys [whoami] :as client}]
+(defmethod testable/-load ::client [{:funnel/keys [whoami]
+                                     :kaocha.cljs2/keys [timeout]
+                                     :as client}]
   (send-to client {:type             :fetch-test-data
                    :funnel/subscribe [:id (:id whoami)]})
   (listen-to client
@@ -127,6 +140,7 @@
                          (map (partial ns-testable whoami) (:test-data msg))))
                  testable))
              {:init client
+              :timeout timeout
               :on-timeout
               (fn [testable]
                 (throw (ex-info "Timeout while fetching test data"
@@ -136,43 +150,48 @@
                                               [:kaocha.testable/id
                                                :kaocha.testable/desc])})))}))
 
-(defmethod testable/-run ::client [{:funnel/keys [conn whoami] :as client} test-plan]
+(defmethod testable/-run ::client [{:funnel/keys [conn whoami]
+                                    :kaocha.cljs2/keys [timeout]
+                                    :as client} test-plan]
   (t/do-report {:type :kaocha/begin-group})
   (log/debug :run-client/starting {:testable-id (::testable/id client)})
 
   (send-to client {:type :start-run :test-count (test-count client)})
-  (wait-for client :run-started)
+  (wait-for client :run-started timeout)
 
   (let [ns-tests (for [ns-test (:kaocha.test-plan/tests client)]
                    (assoc ns-test ::client {:funnel/conn conn :funnel/whoami whoami}))
         ns-tests (testable/run-testables ns-tests test-plan)]
 
     (send-to client {:type :finish-run})
-    (wait-for client :run-finished)
+    (wait-for client :run-finished timeout)
 
     (t/do-report {:type :kaocha/end-group})
     (assoc client :kaocha.result/tests ns-tests)))
 
 (defmethod testable/-run ::ns [{::keys [ns client]
+                                :kaocha.cljs2/keys [timeout]
                                 :as testable}
                                test-plan]
   (t/do-report {:type :begin-test-ns})
   (log/debug :run-ns/starting {:testable-id (::testable/id testable)})
 
   (send-to client {:type :start-ns :ns ns})
-  (wait-for client :ns-started)
+  (wait-for client :ns-started timeout)
 
   (let [var-tests  (for [var-test (:kaocha.test-plan/tests testable)]
                      (assoc var-test ::client client))
         var-tests  (testable/run-testables var-tests test-plan)]
 
     (send-to client {:type :finish-ns})
-    (wait-for client :ns-finished)
+    (wait-for client :ns-finished timeout)
 
     (t/do-report {:type :end-test-ns})
     (assoc testable :kaocha.result/tests var-tests)))
 
-(defmethod testable/-run ::test [{::keys [client test] :as testable} test-plan]
+(defmethod testable/-run ::test [{::keys [client test]
+                                  :kaocha.cljs2/keys [timeout]
+                                  :as testable} test-plan]
   (log/debug :run-test/starting {:testable-id (::testable/id testable)})
   (send-to client {:type :run-test :test test})
   (listen-to client
@@ -199,7 +218,8 @@
                            :kaocha.result/fail (:fail summary 0)
                            :kaocha.result/error (:error summary 0)
                            :kaocha.result/pending 0)))))
-             {:init testable}))
+             {:init testable
+              :timeout timeout}))
 
 (hierarchy/derive! :kaocha.type/cljs2 :kaocha.testable.type/suite)
 (hierarchy/derive! ::client :kaocha.testable.type/group)

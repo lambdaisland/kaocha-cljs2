@@ -2,9 +2,9 @@
 
 ## Added
 
-## Fixed
-
-## Changed
+- Make the timeout configurable with `:kaocha.cljs2/timeout` in miliseconds. If
+  no Funnel message has been received for this amount of time then we assume the
+  client has gotten stuck or gone away and we time out
 
 # 0.0.21 (2020-08-19 / d4de44c)
 
