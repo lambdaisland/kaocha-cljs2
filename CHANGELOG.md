@@ -1,10 +1,8 @@
 # Unreleased
 
-## Added
-
 ## Fixed
 
-## Changed
+- Fix fixtures :once :after hook
 
 # 0.0.28 (2020-08-27 / 9ed88aa)
 
