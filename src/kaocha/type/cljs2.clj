@@ -183,7 +183,7 @@
                      (assoc var-test ::client client))
         var-tests  (testable/run-testables var-tests test-plan)]
 
-    (send-to client {:type :finish-ns})
+    (send-to client {:type :finish-ns :ns ns})
     (wait-for client :ns-finished timeout)
 
     (t/do-report {:type :end-test-ns})
