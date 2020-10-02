@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>lambdaisland</groupId>
   <artifactId>kaocha-cljs2</artifactId>
-  <version>0.0.28</version>
+  <version>0.0.35</version>
   <name>kaocha-cljs2</name>
   <description>cljs.test support for Kaocha, second generation.</description>
   <url>https://github.com/lambdaisland/kaocha-cljs2</url>
@@ -22,7 +22,7 @@
     <url>https://github.com/lambdaisland/kaocha-cljs2</url>
     <connection>scm:git:git://github.com/lambdaisland/kaocha-cljs2.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/lambdaisland/kaocha-cljs2.git</developerConnection>
-    <tag>bf7dfabb79fb1a439f7dde2a94b20176535c6684</tag>
+    <tag>69314240f20d018b9b1e02c4bc6843b9fb92957a</tag>
   </scm>
   <dependencies>
     <dependency>
@@ -64,7 +64,7 @@
         <configuration>
           <archive>
             <manifestEntries>
-              <git-revision>bf7dfabb79fb1a439f7dde2a94b20176535c6684</git-revision>
+              <git-revision>69314240f20d018b9b1e02c4bc6843b9fb92957a</git-revision>
             </manifestEntries>
           </archive>
         </configuration>
