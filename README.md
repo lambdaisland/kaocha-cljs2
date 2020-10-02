@@ -124,12 +124,12 @@ runs in the browser or nodejs).
 
 ``` clojure
 ;; deps.edn
-lambdaisland/kaocha-cljs2 {:mvn/version "0.0.28"}
+lambdaisland/kaocha-cljs2 {:mvn/version "0.0.35"}
 ```
 
 ``` clojure
 ;; project.clj
-[lambdaisland/kaocha-cljs2 "0.0.28"]
+[lambdaisland/kaocha-cljs2 "0.0.35"]
 ```
 
 ### Install Funnel
