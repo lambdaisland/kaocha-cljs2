@@ -59,7 +59,7 @@ to communicate with it.
 
 ## Cast of Characters
 
-Because we have separated the differnent responsibilities to separate projects,
+Because we have separated the different responsibilities to separate projects,
 it does make it a little harder to keep track. These are the different pieces
 involved.
 
@@ -208,7 +208,7 @@ JavaScript runtime, then it's recommended you do this with a before hook.
 
 See the examples directory for specific examples.
 
-When kaoch-cljs2 starts executing it will try to find `chui-remote` clients to
+When kaocha-cljs2 starts executing it will try to find `chui-remote` clients to
 talk to. If there are none it will wait for a client to connect before
 continuing. If there are multiple then it will run tests against all of them.
 
