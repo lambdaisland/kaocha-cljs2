@@ -37,7 +37,7 @@
         build-config (:shadow.build/config build-state)]
     suite))
 
-(defn before-hook [suite]
+(defn before-hook [suite _]
   (-> suite
       compile-shadow
       launch-browser))
