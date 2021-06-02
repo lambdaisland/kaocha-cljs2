@@ -20,4 +20,8 @@
 
   :test
   {:extra-paths ["test"]
-   :extra-deps  {lambdaisland/kaocha {:mvn/version "1.0.672"}}}}}
+   :extra-deps  {lambdaisland/kaocha {:mvn/version "1.0.672"}
+   org.clojure/clojurescript      {:git/url "https://github.com/clojure/clojurescript"
+                                   :sha     "1084cca73ac5082ae76f1939356f664f35284c4d"}} ;; https://clojure.atlassian.net/browse/CLJS-3276
+
+   }}}
