@@ -4,6 +4,8 @@
 
 ## Fixed
 
+- Upgrade Chui, fixes a glogi dependency incompatibility with current version of Clojurescript
+
 ## Changed
 
 # 0.0.35 (2020-10-02 / 3a506bd)
