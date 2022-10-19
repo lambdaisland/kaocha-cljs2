@@ -4,6 +4,8 @@
 
 ## Fixed
 
+- Upgrade Chui, fixes a glogi dependency incompatibility with current version of Clojurescript
+
 ## Changed
 
 - Upgrade Kaocha to 1.70.1086
