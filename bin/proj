@@ -8,6 +8,7 @@
   :inception-year 2020
   :description    "cljs.test support for Kaocha, second generation."
   :aliases-as-optional-deps  [:dev]
+  :group-id "lambdaisland"
   })
 
 
