@@ -6,7 +6,9 @@
 (lioss/main
  {:license        :mpl
   :inception-year 2020
-  :description    "cljs.test support for Kaocha, second generation."})
+  :description    "cljs.test support for Kaocha, second generation."
+  :aliases-as-optional-deps  [:dev]
+  })
 
 
 ;; Local Variables:
