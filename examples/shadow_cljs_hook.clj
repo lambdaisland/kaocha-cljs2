@@ -9,7 +9,7 @@
 (comment
 
   ;; Example config
-  ;;#kaocha/v2
+  ;;#kaocha/v1
   {:plugins [:kaocha.plugin/hooks]
    :tests [{:type                :kaocha.type/cljs2
             :shadow/build-id     :test
