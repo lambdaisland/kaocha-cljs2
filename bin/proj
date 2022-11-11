@@ -7,7 +7,7 @@
  {:license        :mpl
   :inception-year 2020
   :description    "cljs.test support for Kaocha, second generation."
-  :aliases-as-optional-deps  [:dev]
+  :aliases-as-optional-deps  [:test]
   :group-id "lambdaisland"
   })
 
