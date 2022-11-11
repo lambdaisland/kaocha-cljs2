@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0" xsi:schemalocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemalocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>lambdaisland</groupId>
   <artifactId>kaocha-cljs2</artifactId>
-  <version>0.0.35</version>
+  <version>0.1.58</version>
   <name>kaocha-cljs2</name>
   <description>cljs.test support for Kaocha, second generation.</description>
   <url>https://github.com/lambdaisland/kaocha-cljs2</url>
@@ -12,6 +12,9 @@
     <name>Lambda Island</name>
     <url>https://lambdaisland.com</url>
   </organization>
+  <properties>
+    <project class="build sourceEncoding">UTF-8</project>
+  </properties>
   <licenses>
     <license>
       <name>MPL-2.0</name>
@@ -22,13 +25,18 @@
     <url>https://github.com/lambdaisland/kaocha-cljs2</url>
     <connection>scm:git:git://github.com/lambdaisland/kaocha-cljs2.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/lambdaisland/kaocha-cljs2.git</developerConnection>
-    <tag>69314240f20d018b9b1e02c4bc6843b9fb92957a</tag>
+    <tag>65fcf3d36a53d1e33d647844830ab2d05c4b4f21</tag>
   </scm>
   <dependencies>
     <dependency>
       <groupId>lambdaisland</groupId>
       <artifactId>chui-remote</artifactId>
-      <version>0.0.156</version>
+      <version>1.1.192</version>
+    </dependency>
+    <dependency>
+      <groupId>lambdaisland</groupId>
+      <artifactId>chui-ui</artifactId>
+      <version>1.1.192</version>
     </dependency>
     <dependency>
       <groupId>io.pedestal</groupId>
@@ -37,8 +45,45 @@
     </dependency>
     <dependency>
       <groupId>lambdaisland</groupId>
-      <artifactId>chui-ui</artifactId>
-      <version>0.0.156</version>
+      <artifactId>kaocha</artifactId>
+      <version>1.70.1086</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>aleph</groupId>
+      <artifactId>aleph</artifactId>
+      <version>0.4.2</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tika</groupId>
+      <artifactId>tika-core</artifactId>
+      <version>1.17</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-all</artifactId>
+      <version>4.1.34.Final</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>thheller</groupId>
+      <artifactId>shadow-cljs</artifactId>
+      <version>2.11.0</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.2.3</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.clojure</groupId>
+      <artifactId>clojurescript</artifactId>
+      <version>1.10.866</version>
+      <optional>true</optional>
     </dependency>
   </dependencies>
   <build>
@@ -56,6 +101,10 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.8.1</version>
+        <configuration>
+          <source>1.8</source>
+          <target>1.8</target>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -64,7 +113,7 @@
         <configuration>
           <archive>
             <manifestEntries>
-              <git-revision>69314240f20d018b9b1e02c4bc6843b9fb92957a</git-revision>
+              <git-revision>65fcf3d36a53d1e33d647844830ab2d05c4b4f21</git-revision>
             </manifestEntries>
           </archive>
         </configuration>
