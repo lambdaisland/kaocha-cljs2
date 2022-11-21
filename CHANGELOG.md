@@ -4,6 +4,8 @@
 
 ## Fixed
 
+- Fix #23 dead link in readme
+
 ## Changed
 
 # 0.1.58 (2022-11-11 / 98fdc42)

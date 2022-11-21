@@ -206,7 +206,7 @@ JavaScript runtime, then it's recommended you do this with a before hook.
           :kaocha.hooks/before [my.kaocha.hooks/compile-and-launch]}]}
 ```
 
-See the examples directory and [this repository](https://github.com/plexus/cljs-test-examples) for specific examples.
+See the examples directory and [this repository](https://github.com/plexus/cljs-test-example) for specific examples.
 
 When kaocha-cljs2 starts executing it will try to find `chui-remote` clients to
 talk to. If there are none it will wait for a client to connect before
