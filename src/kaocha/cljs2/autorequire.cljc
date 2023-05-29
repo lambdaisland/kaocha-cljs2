@@ -1,4 +1,4 @@
-(ns kaocha.cljs2.autorequire
+(ns ^:no-doc kaocha.cljs2.autorequire
   #?(:clj
      (:require [clojure.java.io :as io]
                [kaocha.load :as load]
