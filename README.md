@@ -1,7 +1,7 @@
 # kaocha-cljs2
 
 <!-- badges -->
-[![CircleCI](https://circleci.com/gh/lambdaisland/kaocha-cljs2.svg?style=svg)](https://circleci.com/gh/lambdaisland/kaocha-cljs2) [![cljdoc badge](https://cljdoc.org/badge/lambdaisland/kaocha-cljs2)](https://cljdoc.org/d/lambdaisland/kaocha-cljs2) [![Clojars Project](https://img.shields.io/clojars/v/lambdaisland/kaocha-cljs2.svg)](https://clojars.org/lambdaisland/kaocha-cljs2)
+[![cljdoc badge](https://cljdoc.org/badge/lambdaisland/kaocha-cljs2)](https://cljdoc.org/d/lambdaisland/kaocha-cljs2) [![Clojars Project](https://img.shields.io/clojars/v/lambdaisland/kaocha-cljs2.svg)](https://clojars.org/lambdaisland/kaocha-cljs2)
 <!-- /badges -->
 
 Run ClojureScript tests with [Kaocha](https://github.com/lambdaisland/kaocha). New and improved.
